@@ -19,20 +19,22 @@
 #include <nanoprintf.h>
 #include <mmio.h>
 
-#define MTK_UART_BASE      0x11001000
 #define MTK_UART_THR       0x00
 #define MTK_UART_LSR       0x14
 #define MTK_UART_LSR_THRE  (1 << 5)
 
+static volatile uintptr_t MTK_UART_BASE = 0x88888888;
+
 static inline void uart_write(uint32_t offset, uint32_t value)
 {
-    writel(value, MTK_UART_BASE + offset);
+    *(volatile uint32_t *)(MTK_UART_BASE + offset) = value;
 }
 
 static inline uint32_t uart_read(uint32_t offset)
 {
-    return readl(MTK_UART_BASE + offset);
+    return *(volatile uint32_t *)(MTK_UART_BASE + offset);
 }
+
 
 static void uart_putc(int ch, void *ctx)
 {
