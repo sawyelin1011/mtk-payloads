@@ -5,6 +5,7 @@ DIRS=(
     da_xml
     extloader
     secpatcher
+    hakujoudai
 )
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
