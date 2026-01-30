@@ -7,6 +7,7 @@ These payloads are intended for educational purposes only. Use them at your own 
 ## Contents
 
 * [da_x](da_x): DA Extensions for V5/XFlash devices
+* [da_xml](da_xml): DA Extensions for V6/XML devices
 * [libsej](libsej): A portable library for SEJ (Security Engine for JTAG protection)
 * [extloader](extloader): A small loader for adding the `boot_to` command and loads DA extensions
 * [secpatcher](secpatcher): A tethered BROM payload for Legacy and V5 devices that disables security
