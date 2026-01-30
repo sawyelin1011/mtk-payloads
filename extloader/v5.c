@@ -24,6 +24,9 @@ __attribute__((section(".text.start"))) int cmd_boot_to(com_channel_struct* chan
     channel->read(target, &to_read);
     channel->write((uint8_t*)&status, 4);
 
-    ((void(*)(void*))target)(&status);
+    void (*entry)(void *) = (void (*)(void *))((uintptr_t)target | 1);
+
+    entry(&status);
+
     return status;
 }
