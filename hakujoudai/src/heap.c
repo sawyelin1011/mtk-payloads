@@ -9,6 +9,13 @@
 #include <debug.h>
 #include <libc.h>
 
+struct cmd_dpc_t *cmd_dpc = NULL;
+
+struct cmd_dpc_t *get_cmd_dpc()
+{
+    return cmd_dpc;
+}
+
 static int ptr_valid(uintptr_t p, uintptr_t base, uintptr_t end)
 {
     return p >= base && p < end && (p & PTR_ALIGN_MASK) == 0;
@@ -108,6 +115,7 @@ static void clear_dpc(uintptr_t corrupted_node)
     printf("  Clearing DPC @ 0x%lx (0x%x bytes from key field)\n",
            (unsigned long)dpc_key_addr, DPC_CLEAR_SIZE);
     memset((void *)dpc_key_addr, 0, DPC_CLEAR_SIZE);
+    cmd_dpc = (struct cmd_dpc_t *)dpc_key_addr;
 }
 
 void heap_fix(uintptr_t addr)

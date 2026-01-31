@@ -3,7 +3,9 @@
  * SPDX-FileCopyrightText: 2026 Shomy, R0rt1z2
  */
 
+#include <stdint.h>
 #include <libc.h>
+#include <heap.h>
 #include <commands.h>
 #include <debug.h>
 
@@ -32,7 +34,9 @@ int cmd_boot_to(struct com_channel_struct *channel, const char *xml)
     if (status != STATUS_OK)
         return status;
 
-    ((void (*)(void *))ext_addr)(&status);
+    get_cmd_dpc()->cb = (cmd_dpc_cb)ext_addr;
+    get_cmd_dpc()->arg = &status;
+
     return status;
 }
 
@@ -59,7 +63,7 @@ int cmd_call_function(struct com_channel_struct *channel, const char *xml)
         return STATUS_ERR;
 
     uintptr_t addr = (uintptr_t)atoull(mxmlGetNodeText(tree, "da/arg/address"));
-    ((void (*)(void))addr)();
+    get_cmd_dpc()->cb = (cmd_dpc_cb)addr;
 
     da_free(tree);
     return STATUS_OK;

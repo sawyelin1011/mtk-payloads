@@ -76,5 +76,15 @@ struct alloc_struct_begin {
 #define DPC_CLEAR_SIZE 0x10
 #endif
 
+typedef void (*cmd_dpc_cb)(void *arg);
+
+struct cmd_dpc_t {
+  cmd_dpc_cb cb;
+  void *arg;
+};
+
+struct cmd_dpc_t *get_cmd_dpc();
+extern struct cmd_dpc_t dpc;
+
 void heap_dump(uintptr_t addr);
 void heap_fix(uintptr_t addr);
