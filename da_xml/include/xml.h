@@ -6,6 +6,7 @@
 #ifndef DA_XML_XML_H
 #define DA_XML_XML_H
 
+const char *get_node_text(void *tree, const char *path);
 bool mxmlCheckNodes(void *tree, ...);
 
 // TODO: Use mxmlDelete instead of free

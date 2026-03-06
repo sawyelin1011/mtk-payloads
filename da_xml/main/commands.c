@@ -29,7 +29,7 @@ int cmd_ack(struct com_channel_struct *channel, const char*) {
         "<upload>0x%08x</upload>"
         "<malloc>0x%08x</malloc>"
         "<free>0x%08x</free>"
-        "<mxmlGetNodeText>0x%08x</mxmlGetNodeText>"
+        "<get_node_text>0x%08x</get_node_text>"
         "<mxmlLoadString>0x%08x</mxmlLoadString>"
         "</ack>",
         (unsigned int)(uintptr_t)register_major_command,
@@ -37,7 +37,7 @@ int cmd_ack(struct com_channel_struct *channel, const char*) {
         (unsigned int)(uintptr_t)upload,
         (unsigned int)(uintptr_t)malloc,
         (unsigned int)(uintptr_t)free,
-        (unsigned int)(uintptr_t)mxmlGetNodeText,
+        (unsigned int)(uintptr_t)get_node_text,
         (unsigned int)(uintptr_t)mxmlLoadString
     );
 
@@ -57,8 +57,8 @@ int cmd_readmem(struct com_channel_struct *channel, const char* xml) {
 
     MXML_LOAD(tree, xml, CB_OPAQUE, "da/arg/address", "da/arg/length", NULL);
 
-    address = atoull(mxmlGetNodeText(tree, "da/arg/address"));
-    length = atoull(mxmlGetNodeText(tree, "da/arg/length"));
+    address = atoull(get_node_text(tree, "da/arg/address"));
+    length = atoull(get_node_text(tree, "da/arg/length"));
 
     printf("ReadMem: address=0x%08lx length=0x%08x\n", address, length);
 
@@ -77,8 +77,8 @@ int cmd_writemem(struct com_channel_struct *channel, const char* xml) {
 
     MXML_LOAD(tree, xml, CB_OPAQUE, "da/arg/address", "da/arg/length", NULL);
 
-    address = (char *)(uintptr_t)atoull(mxmlGetNodeText(tree, "da/arg/address"));
-    length = atoull(mxmlGetNodeText(tree, "da/arg/length"));
+    address = (char *)(uintptr_t)atoull(get_node_text(tree, "da/arg/address"));
+    length = atoull(get_node_text(tree, "da/arg/length"));
 
     printf("WriteMem: address=0x%08lx length=0x%08x\n", (uintptr_t)address, length);
 
@@ -92,18 +92,18 @@ int cmd_sej_aes(struct com_channel_struct *channel, const char* xml) {
     #define AES_MAX_LEN 4096
     int status = STATUS_OK;
     const char *source_file = "sej_aes.bin";
+    uint32_t data_length = 0;
+    void* data_buf = NULL;
     void *tree;
-    uint32_t data_length;
     bool anti_clone;
     bool encrypt;
     bool legacy;
 
     MXML_LOAD(tree, xml, CB_OPAQUE, "da/arg/encrypt", "da/arg/legacy", "da/arg/ac", "da/arg/length", NULL);
 
-    encrypt = (strcmp(mxmlGetNodeText(tree, "da/arg/encrypt"), "yes") == 0);
-    legacy  = (strcmp(mxmlGetNodeText(tree, "da/arg/legacy"), "yes") == 0);
-    anti_clone = (strcmp(mxmlGetNodeText(tree, "da/arg/ac"), "yes") == 0);
-    data_length = atoull(mxmlGetNodeText(tree, "da/arg/length"));
+    encrypt = (strcmp(get_node_text(tree, "da/arg/encrypt"), "yes") == 0);
+    legacy  = (strcmp(get_node_text(tree, "da/arg/legacy"), "yes") == 0);
+    anti_clone = (strcmp(get_node_text(tree, "da/arg/ac"), "yes") == 0);
 
     if (data_length > AES_MAX_LEN) {
         status = STATUS_ERR;
@@ -145,7 +145,7 @@ int cmd_set_sej_base(struct com_channel_struct*, const char* xml) {
 
     MXML_LOAD(tree, xml, CB_OPAQUE, "da/arg/sej_base", NULL);
 
-    sej_base = atoull(mxmlGetNodeText(tree, "da/arg/sej_base"));
+    sej_base = atoull(get_node_text(tree, "da/arg/sej_base"));
 
     printf("Set SEJ Base: 0x%08lx\n", sej_base);
     set_sej_base(sej_base);
