@@ -99,29 +99,22 @@ int cmd_sej_aes(struct com_channel_struct *channel, const char* xml) {
     bool encrypt;
     bool legacy;
 
-    MXML_LOAD(tree, xml, CB_OPAQUE, "da/arg/encrypt", "da/arg/legacy", "da/arg/ac", "da/arg/length", NULL);
+    MXML_LOAD(tree, xml, CB_OPAQUE, "da/arg/encrypt", "da/arg/legacy", "da/arg/ac", NULL);
 
     encrypt = (strcmp(get_node_text(tree, "da/arg/encrypt"), "yes") == 0);
     legacy  = (strcmp(get_node_text(tree, "da/arg/legacy"), "yes") == 0);
     anti_clone = (strcmp(get_node_text(tree, "da/arg/ac"), "yes") == 0);
 
+    status = download(channel, source_file, (char**)&data_buf, &data_length, "SEJ AES data");
+    if (status != STATUS_OK) {
+        goto free;
+    }
+
+    // `download` fills both `data_buf` and `data_length` for us
     if (data_length > AES_MAX_LEN) {
         status = STATUS_ERR;
         printf("SEJ AES: Data length too large: 0x%08x\n", data_length);
         goto end;
-    }
-
-    uint32_t buf_size = data_length + 16;
-    void* data_buf = malloc(buf_size);
-    if (!data_buf) {
-        status = STATUS_ERR;
-        printf("SEJ AES: Failed to allocate data buffer\n");
-        goto end;
-    }
-
-    status = download(channel, source_file, (char**)&data_buf, &buf_size, "SEJ AES data");
-    if (status != STATUS_OK) {
-        goto free;
     }
 
     if (encrypt)
@@ -132,7 +125,8 @@ int cmd_sej_aes(struct com_channel_struct *channel, const char* xml) {
     status = upload(channel, source_file, (const char*)data_buf, data_length, "SEJ AES result");
 
 free:
-    free(data_buf);
+    if (data_buf)
+        free(data_buf);
 end:
     MXMLDELETE(tree);
     return status;
