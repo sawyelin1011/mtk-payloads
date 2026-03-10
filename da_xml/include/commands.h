@@ -8,9 +8,6 @@
 
 #include <protocol_functions.h>
 
-#define STATUS_OK (0x00000000)
-#define STATUS_ERR (0xC0010001)
-
 #define CMD_ACK "CMD:EXT-ACK"
 #define CMD_DA_CTX "CMD:EXT-DA-CTX"
 #define CMD_SEJ "CMD:EXT-SEJ"

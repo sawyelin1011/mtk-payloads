@@ -21,6 +21,9 @@ struct com_channel_struct {
   int (*log_to_uart)(const uint8_t *buffer, uint32_t length);
 };
 
+#define STATUS_OK (0x00000000)
+#define STATUS_ERR (0xC0010001)
+
 #define MAX_ALT_PATTERNS 4
 
 typedef struct {
@@ -67,8 +70,8 @@ typedef int (*HHANDLE)(struct com_channel_struct* /* channel */, const char* /* 
 
 // Protocol functions
 extern void (*register_major_command)(const char *, const char *, HHANDLE);
-extern int (*download)(struct com_channel_struct*, const char*, char**, uint32_t*, const char*);
-extern int (*upload)(struct com_channel_struct*, const char*, const char*, uint32_t, const char*);
+int download(struct com_channel_struct *channel, const char *filename, char **data_buf, uint32_t *data_len, const char *desc);
+int upload(struct com_channel_struct *channel, const char *filename, const char *data_buf, uint32_t data_len, const char *desc);
 
 // Memory
 extern void *(*malloc)(size_t size);

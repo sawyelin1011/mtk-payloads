@@ -29,6 +29,7 @@ char *strcpy(char *to, const char *from);
 int strcmp(const char *s1, const char *s2);
 int strncmp(const char *s1, const char *s2, u32 n);
 char *strstr(const char *s1, const char *s2);
+int split(char *src, char **dest, int max, char sep);
 
 void *memset(void*  dst, int c, u32 n);
 void *memcpy(void *dest, const void *src, size_t n);

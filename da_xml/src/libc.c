@@ -92,6 +92,26 @@ char *strstr(const char *s1, const char *s2)
     return 0;
 }
 
+int split(char *src, char **dest, int max, char sep) {
+    if (!src || !dest || max <= 0)
+        return 0;
+
+    int cnt = 0;
+    dest[cnt++] = src;
+
+    while (*src) {
+        if (*src == sep) {
+            *src = 0;
+            if (cnt >= max)
+                return cnt;
+            dest[cnt++] = src + 1;
+        }
+        src++;
+    }
+
+    return cnt;
+}
+
 void *memset(void *dst, int c, u32 n)
 {
     if (n != 0) {
