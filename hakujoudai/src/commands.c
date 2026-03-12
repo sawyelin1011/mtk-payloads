@@ -4,6 +4,7 @@
  */
 
 #include <stdint.h>
+#include <inttypes.h>
 #include <libc.h>
 #include <heap.h>
 #include <commands.h>
@@ -64,25 +65,16 @@ int cmd_boot_to(struct com_channel_struct *channel, const char *xml)
     char *buf = (char *)ext_addr;
     uint32_t len = 0x1000000;
 
-#ifdef __aarch64__
-    printf("%s: loading extensions to 0x%llx (max %u bytes)\n", 
-           __func__, (unsigned long long)ext_addr, len);
-#else
-    printf("%s: loading extensions to 0x%08x (max %u bytes)\n", 
-           __func__, (unsigned int)ext_addr, len);
-#endif
+    printf("%s: loading extensions to 0x%" PRIxPTR " (max 0x%" PRIx32 " bytes)\n",
+           __func__, (uintptr_t)ext_addr, len);
 
     int status = download(channel, "ext", &buf, &len, "ext");
     if (status != STATUS_OK) {
-        printf("%s: download failed: 0x%08x\n", __func__, status);
+        printf("%s: download failed: 0x%" PRIx32 "\n", __func__, status);
         return status;
     }
 
-#ifdef __aarch64__
-    printf("%s: scheduling call to 0x%llx\n", __func__, (unsigned long long)ext_addr);
-#else
-    printf("%s: scheduling call to 0x%08x\n", __func__, (unsigned int)ext_addr);
-#endif
+    printf("%s: scheduling call to 0x%" PRIxPTR "\n", __func__, (uintptr_t)ext_addr);
 
     get_cmd_dpc()->cb = (cmd_dpc_cb)ext_addr;
     get_cmd_dpc()->arg = &status;
@@ -107,22 +99,16 @@ int cmd_patch_mem(struct com_channel_struct *channel, const char *xml)
         return STATUS_ERR;
     }
 
-#ifdef __aarch64__
-    char *dst = (char *)atoull(addr_str);
-    printf("%s: patching %u bytes at 0x%llx\n", 
-           __func__, (unsigned int)atoui(len_str), (unsigned long long)dst);
-#else
-    char *dst = (char *)atoui(addr_str);
-    printf("%s: patching %u bytes at 0x%08x\n", 
-           __func__, atoui(len_str), (unsigned int)dst);
-#endif
+    char *dst = (char *)(uintptr_t)atoull(addr_str);
+    printf("%s: patching %" PRIu32 " bytes at 0x%" PRIxPTR "\n",
+           __func__, atoui(len_str), (uintptr_t)dst);
 
     /* + 4 or download fails on '*pdata_len <= total_length' */
     uint32_t size = atoui(len_str) + 4;
 
     int status = download(channel, "mempatch.bin", &dst, &size, "memory patch");
     if (status != STATUS_OK) {
-        printf("%s: download failed: 0x%08x\n", __func__, status);
+        printf("%s: download failed: 0x%" PRIx32 "\n", __func__, status);
         da_free(tree);
         return status;
     }
@@ -148,13 +134,8 @@ int cmd_call_function(struct com_channel_struct *channel, const char *xml)
         return STATUS_ERR;
     }
 
-#ifdef __aarch64__
     uintptr_t addr = (uintptr_t)atoull(addr_str);
-    printf("%s: scheduling call to 0x%llx\n", __func__, (unsigned long long)addr);
-#else
-    uintptr_t addr = (uintptr_t)atoui(addr_str);
-    printf("%s: scheduling call to 0x%08x\n", __func__, (unsigned int)addr);
-#endif
+    printf("%s: scheduling call to 0x%" PRIxPTR "\n", __func__, addr);
 
     get_cmd_dpc()->cb = (cmd_dpc_cb)addr;
 
