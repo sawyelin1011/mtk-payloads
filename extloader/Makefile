@@ -6,7 +6,7 @@ OBJCOPY := $(CROSS_COMPILE)objcopy
 
 BUILD_DIR := build
 TARGET    := build/extloader
-OUTPUT := ../payloads/extloader
+OUTPUT := ../payloads/extloader_v5
 
 SRC := v5.c
 OBJ := $(BUILD_DIR)/v5.o
