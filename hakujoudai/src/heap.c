@@ -95,7 +95,7 @@ void heap_dump_chunk(void *user_ptr)
     printf("chunk @ 0x%lx\n", (unsigned long)user_ptr);
 
 #ifndef __aarch64__
-    printf("  magic = 0x%08x %s\n", as->magic,
+    printf("  magic = 0x%08lx %s\n", (unsigned long)as->magic,
            (as->magic == HEAP_MAGIC) ? "(ok)" : "(INVALID!)");
 #endif
 

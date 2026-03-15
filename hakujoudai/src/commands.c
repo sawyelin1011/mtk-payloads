@@ -4,7 +4,6 @@
  */
 
 #include <stdint.h>
-#include <inttypes.h>
 #include <libc.h>
 #include <heap.h>
 #include <commands.h>
@@ -65,16 +64,16 @@ int cmd_boot_to(struct com_channel_struct *channel, const char *xml)
     char *buf = (char *)ext_addr;
     uint32_t len = 0x1000000;
 
-    printf("%s: loading extensions to 0x%" PRIxPTR " (max 0x%" PRIx32 " bytes)\n",
-           __func__, (uintptr_t)ext_addr, len);
+    printf("%s: loading extensions to 0x%lx (max 0x%lx bytes)\n",
+           __func__, (unsigned long)ext_addr, (unsigned long)len);
 
     int status = download(channel, "ext", &buf, &len, "ext");
     if (status != STATUS_OK) {
-        printf("%s: download failed: 0x%" PRIx32 "\n", __func__, status);
+        printf("%s: download failed: 0x%lx\n", __func__, (unsigned long)status);
         return status;
     }
 
-    printf("%s: scheduling call to 0x%" PRIxPTR "\n", __func__, (uintptr_t)ext_addr);
+    printf("%s: scheduling call to 0x%lx\n", __func__, (unsigned long)ext_addr);
 
     get_cmd_dpc()->cb = (cmd_dpc_cb)ext_addr;
     get_cmd_dpc()->arg = &status;
@@ -100,15 +99,15 @@ int cmd_patch_mem(struct com_channel_struct *channel, const char *xml)
     }
 
     char *dst = (char *)(uintptr_t)atoull(addr_str);
-    printf("%s: patching %" PRIu32 " bytes at 0x%" PRIxPTR "\n",
-           __func__, atoui(len_str), (uintptr_t)dst);
+    printf("%s: patching %lu bytes at 0x%lx\n",
+           __func__, (unsigned long)atoui(len_str), (unsigned long)dst);
 
     /* + 4 or download fails on '*pdata_len <= total_length' */
     uint32_t size = atoui(len_str) + 4;
 
     int status = download(channel, "mempatch.bin", &dst, &size, "memory patch");
     if (status != STATUS_OK) {
-        printf("%s: download failed: 0x%" PRIx32 "\n", __func__, status);
+        printf("%s: download failed: 0x%lx\n", __func__, (unsigned long)status);
         da_free(tree);
         return status;
     }
@@ -135,7 +134,7 @@ int cmd_call_function(struct com_channel_struct *channel, const char *xml)
     }
 
     uintptr_t addr = (uintptr_t)atoull(addr_str);
-    printf("%s: scheduling call to 0x%" PRIxPTR "\n", __func__, addr);
+    printf("%s: scheduling call to 0x%lx\n", __func__, (unsigned long)addr);
 
     get_cmd_dpc()->cb = (cmd_dpc_cb)addr;
 

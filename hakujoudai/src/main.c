@@ -25,6 +25,7 @@ __attribute__((section(".text.start"))) void main(void)
     heap_fix(heap_struct);
     printf("\n");
     heap_dump(heap_struct);
+    printf("\n");
 
     register_major_command("CMD:BOOT-TO", "1", cmd_boot_to);
     register_major_command("CMD:EXP-CALL-FUNC", "1", cmd_call_function);
