@@ -1,77 +1,110 @@
-ARCH ?= arm
+CROSS_COMPILE    ?= arm-none-eabi-
+CROSS_COMPILE_64 ?= aarch64-none-linux-gnu-
 
-ifeq ($(ARCH),aarch64)
-    CROSS_COMPILE := aarch64-none-linux-gnu-
-    ARCH_DIR      := arm64
-    ARCH_DEFINE   := -DAARCH64
-    TARGET_NAME   := da_xml_arm64
-else
-    CROSS_COMPILE := arm-none-eabi-
-    ARCH_DIR      := arm
-    ARCH_DEFINE   := -DARM
-    TARGET_NAME   := da_xml_arm
-endif
+CC_ARM      := $(CROSS_COMPILE)gcc
+OBJCOPY_ARM := $(CROSS_COMPILE)objcopy
+SIZE_ARM    := $(CROSS_COMPILE)size
 
-CC      := $(CROSS_COMPILE)gcc
-OBJCOPY := $(CROSS_COMPILE)objcopy
-SIZE    := $(CROSS_COMPILE)size
+CC_ARM64      := $(CROSS_COMPILE_64)gcc
+OBJCOPY_ARM64 := $(CROSS_COMPILE_64)objcopy
+SIZE_ARM64    := $(CROSS_COMPILE_64)size
 
-SRC_DIR     := src
-INC_DIR     := include
-LIB_DIR     := lib
-LIBSEJ_DIR  := ../libsej
-OUTPUT_DIR  := ../payloads
-BUILD_DIR   := build/$(ARCH)
+FEATURES   := uart crypto rpmb mmc mmc_rpmb
+COMMON_DIR := ../common
 
-TARGET_ELF  := $(BUILD_DIR)/$(TARGET_NAME).elf
-TARGET_BIN  := $(OUTPUT_DIR)/$(TARGET_NAME).bin
-LINKER_SCR  := src/arch/$(ARCH_DIR)/generic.ld
+include $(COMMON_DIR)/common.mk
 
-C_SOURCES   := $(shell find main -name '*.c') \
-               $(shell find src -name '*.c') \
-               $(wildcard $(LIBSEJ_DIR)/src/*.c)
+LIBSEJ_DIR := ../libsej
+OUTPUT_DIR := ../payloads
+BUILD_DIR  := build
 
-# Remove ../ from paths to keep objects inside build directory
-OBJECTS     := $(C_SOURCES:../%=%)
-OBJECTS     := $(OBJECTS:%.c=$(BUILD_DIR)/%.o)
+DA_XML_SRCS := \
+	src/main.c \
+	src/commands.c \
+	src/protocol_functions.c \
+	src/xml.c
 
-CFLAGS      := -std=gnu99 -Os -Wall -Wextra
-CFLAGS      += -fno-strict-aliasing -fno-builtin
-CFLAGS      += -fno-omit-frame-pointer -fno-pic -fno-pie
-CFLAGS      += -I$(INC_DIR) -I$(LIB_DIR) -I$(LIBSEJ_DIR)/include
-CFLAGS      += $(ARCH_DEFINE)
+LIBSEJ_SRCS := $(LIBSEJ_DIR)/src/sej.c
 
-LDFLAGS     := -nodefaultlibs -nostdlib -Wl,--build-id=none,--no-warn-rwx-segments
-LDFLAGS     += -T$(LINKER_SCR) -L$(BUILD_DIR)
+ALL_SRCS := $(DA_XML_SRCS) $(LIBSEJ_SRCS) $(COMMON_SRCS)
 
-ifeq ($(ARCH),aarch64)
-    CFLAGS  += -march=armv8-a -mgeneral-regs-only -mno-outline-atomics
-else
-    CFLAGS  += -marm -mcpu=cortex-a9 -mno-unaligned-access
-endif
+CFLAGS := $(COMMON_CFLAGS) \
+	-Iinclude \
+	-Ilib \
+	-I$(LIBSEJ_DIR)/include \
+	$(COMMON_INCLUDES)
 
-all: $(TARGET_BIN)
+LDFLAGS := $(COMMON_LDFLAGS) -lgcc
 
-$(TARGET_BIN): $(TARGET_ELF)
+CFLAGS_ARM   := $(CFLAGS) -DARM -marm -mcpu=cortex-a9 -mno-unaligned-access
+CFLAGS_ARM64 := $(CFLAGS) -DAARCH64 -march=armv8-a -mgeneral-regs-only -mno-outline-atomics
+
+LDFLAGS_ARM   := $(LDFLAGS) -Tsrc/arch/arm/generic.ld
+LDFLAGS_ARM64 := $(LDFLAGS) -Tsrc/arch/arm64/generic.ld
+
+arm_obj   = $(patsubst %.c,$(BUILD_DIR)/arm/%.o,$(subst ../,,$(1)))
+arm64_obj = $(patsubst %.c,$(BUILD_DIR)/aarch64/%.o,$(subst ../,,$(1)))
+
+ARM_OBJS   := $(call arm_obj,$(ALL_SRCS))
+ARM64_OBJS := $(call arm64_obj,$(ALL_SRCS))
+
+ARM_ELF   := $(BUILD_DIR)/arm/da_xml_arm.elf
+ARM_BIN   := $(OUTPUT_DIR)/da_xml_arm.bin
+
+ARM64_ELF := $(BUILD_DIR)/aarch64/da_xml_arm64.elf
+ARM64_BIN := $(OUTPUT_DIR)/da_xml_arm64.bin
+
+.PHONY: all arm aarch64 clean
+
+all: arm aarch64
+
+arm: $(ARM_BIN)
+aarch64: $(ARM64_BIN)
+
+$(ARM_BIN): $(ARM_ELF)
 	@mkdir -p $(dir $@)
-	$(OBJCOPY) -O binary $< $@
+	$(OBJCOPY_ARM) -O binary $< $@
+	$(SIZE_ARM) $<
 	@echo "Built: $@"
 
-$(TARGET_ELF): $(OBJECTS)
+$(ARM_ELF): $(ARM_OBJS)
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
-	$(SIZE) $@
+	$(CC_ARM) $(CFLAGS_ARM) $^ -o $@ $(LDFLAGS_ARM)
 
-$(BUILD_DIR)/%.o: %.c
+$(BUILD_DIR)/arm/%.o: %.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC_ARM) $(CFLAGS_ARM) -c $< -o $@
 
-$(BUILD_DIR)/libsej/%.o: $(LIBSEJ_DIR)/%.c
+$(BUILD_DIR)/arm/common/%.o: $(COMMON_DIR)/%.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC_ARM) $(CFLAGS_ARM) -c $< -o $@
+
+$(BUILD_DIR)/arm/libsej/%.o: $(LIBSEJ_DIR)/%.c
+	@mkdir -p $(dir $@)
+	$(CC_ARM) $(CFLAGS_ARM) -c $< -o $@
+
+$(ARM64_BIN): $(ARM64_ELF)
+	@mkdir -p $(dir $@)
+	$(OBJCOPY_ARM64) -O binary $< $@
+	$(SIZE_ARM64) $<
+	@echo "Built: $@"
+
+$(ARM64_ELF): $(ARM64_OBJS)
+	@mkdir -p $(dir $@)
+	$(CC_ARM64) $(CFLAGS_ARM64) $^ -o $@ $(LDFLAGS_ARM64)
+
+$(BUILD_DIR)/aarch64/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC_ARM64) $(CFLAGS_ARM64) -c $< -o $@
+
+$(BUILD_DIR)/aarch64/common/%.o: $(COMMON_DIR)/%.c
+	@mkdir -p $(dir $@)
+	$(CC_ARM64) $(CFLAGS_ARM64) -c $< -o $@
+
+$(BUILD_DIR)/aarch64/libsej/%.o: $(LIBSEJ_DIR)/%.c
+	@mkdir -p $(dir $@)
+	$(CC_ARM64) $(CFLAGS_ARM64) -c $< -o $@
 
 clean:
-	rm -rf build
-	rm -f $(TARGET_BIN)
-
-.PHONY: all clean
+	rm -rf $(BUILD_DIR)
+	rm -f $(ARM_BIN) $(ARM64_BIN)

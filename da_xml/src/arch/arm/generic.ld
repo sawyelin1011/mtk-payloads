@@ -9,6 +9,10 @@ SECTIONS
   .text     : { *(.text.main) *(.text   .text.*   .gnu.linkonce.t.*) }
   .rodata   : { *(.rodata .rodata.* .gnu.linkonce.r.*) }
   .data     : { *(.data   .data.*   .gnu.linkonce.d.*) }
-  .bss      : { *(.bss    .bss.*    .gnu.linkonce.b.*) *(COMMON) }
+  .bss      : {
+    __bss_start = .;
+    *(.bss    .bss.*    .gnu.linkonce.b.*) *(COMMON)
+    __bss_end = .;
+  }
   /DISCARD/ : { *(.interp) *(.dynsym) *(.dynstr) *(.hash) *(.dynamic) *(.comment) }
 }

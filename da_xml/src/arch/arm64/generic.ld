@@ -21,8 +21,10 @@ SECTIONS
   }
 
   .bss ALIGN(32) : {
+      __bss_start = .;
       *(.bss*)
       *(COMMON)
+      __bss_end = .;
   }
 
   /DISCARD/ : {

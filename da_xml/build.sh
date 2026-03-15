@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 
+make clean
 make
-make ARCH=aarch64 CROSS_COMPILE=aarch64-none-linux-gnu-

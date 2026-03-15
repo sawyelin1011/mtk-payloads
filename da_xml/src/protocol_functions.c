@@ -14,16 +14,52 @@
 #define XML_CMD_BUFF_LEN 0x80000
 #define CMD_RESULT_BUFF_LEN 64
 
-void (*register_major_command)(const char *, const char *, HHANDLE) = (const void*)0x22222222;
+#define DA_LOG_BUF_SIZE 512
 
-void *(*malloc)(size_t size) = (const void*)0x55555555;
-void (*free)(void *ptr) = (const void*)0x66666666;
+struct com_channel_struct *global_channel;
 
-char *(*mxmlGetNodeText)(void*, const char*) = (void*)0x77777777;
-void *(*mxmlLoadString)(void*, const char*, void*) = (void*)0x88888888;
+static int  da_log_pos = 0;
+char da_log_buf[DA_LOG_BUF_SIZE];
 
-int download(struct com_channel_struct *channel, const char *filename, char **data_buf, uint32_t *data_len, const char *desc)
-{
+void (*register_major_command)(const char *, const char *, HHANDLE) = (const void*)0x11111111;
+
+void *(*malloc)(size_t size) = (const void*)0x22222222;
+void (*free)(void *ptr) = (const void*)0x33333333;
+
+char *(*mxmlGetNodeText)(void*, const char*) = (void*)0x44444444;
+void *(*mxmlLoadString)(void*, const char*, void*) = (void*)0x55555555;
+
+void *(*mmc_get_card)(int card_id) = (const void*)0x66666666;
+
+static void da_log_flush(void) {
+    if (da_log_pos == 0 || global_channel == NULL)
+        return;
+
+    global_channel->log_to_pc((const uint8_t *)da_log_buf, (uint32_t)da_log_pos);
+    da_log_pos = 0;
+}
+
+static void da_log_putc(int ch, void *ctx) {
+    (void)ctx;
+
+    if (da_log_pos >= DA_LOG_BUF_SIZE)
+        da_log_flush();
+
+    da_log_buf[da_log_pos++] = (char)ch;
+
+    if (ch == '\n')
+        da_log_flush();
+}
+
+void da_log_register(struct com_channel_struct *channel) {
+    if (global_channel != NULL)
+        return;
+
+    global_channel = channel;
+    printf_register_cb(da_log_putc);
+}
+
+int download(struct com_channel_struct *channel, const char *filename, char **data_buf, uint32_t *data_len, const char *desc) {
     printf("Download host file: %s\n", filename);
 
     if (!channel || !data_buf || !data_len) {
@@ -140,8 +176,7 @@ int download(struct com_channel_struct *channel, const char *filename, char **da
     return STATUS_OK;
 }
 
-int upload(struct com_channel_struct *channel, const char *filename, const char *buf, uint32_t size, const char *desc)
-{
+int upload(struct com_channel_struct *channel, const char *filename, const char *buf, uint32_t size, const char *desc) {
     printf("Upload host file: %s\n", filename);
 
     if (!channel || !filename) {
@@ -203,7 +238,7 @@ int upload(struct com_channel_struct *channel, const char *filename, const char 
         }
 
         uint32_t todo = left > packet_length ? packet_length : left;
-        channel->write((uint8_t *)(buf + xfered), todo);
+        channel->write((uint8_t *)((uintptr_t)buf + xfered), todo);
         xfered += todo;
         left -= todo;
 
@@ -222,4 +257,235 @@ int upload(struct com_channel_struct *channel, const char *filename, const char 
 
     printf("Uploaded %u bytes for %s\n", xfered, desc);
     return STATUS_OK;
+}
+
+int download_stream(struct com_channel_struct *channel, const char *filename, uint32_t chunk_size, data_stream_cb cb, void *ctx, const char *desc) {
+    printf("Download stream host file: %s\n", filename);
+
+    if (!channel) {
+        printf("Invalid arguments to download_stream\n");
+        return STATUS_ERR;
+    }
+
+    uint32_t packet_length = 0x200000;
+    if (chunk_size == 0) chunk_size = packet_length;
+    if (chunk_size > packet_length) chunk_size = packet_length;
+
+    char xml[XML_CMD_BUFF_LEN] = {0};
+    const char *cstr_cmd = "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+                           "<host>"
+                           "<version>1.0</version>"
+                           "<command>CMD:DOWNLOAD-FILE</command>"
+                           "<arg><checksum>CHK_NO</checksum>"
+                           "<info>%s</info>"
+                           "<source_file>%s</source_file>"
+                           "<packet_length>0x%x</packet_length></arg>"
+                           "</host>";
+
+    int xml_len = npf_snprintf(xml, sizeof(xml), cstr_cmd, desc, filename, chunk_size);
+
+    if (channel->write((uint8_t *)xml, (uint32_t)xml_len + 1) != 0) {
+        printf("Failed to send download command\n");
+        return STATUS_ERR;
+    }
+
+    char result[CMD_RESULT_BUFF_LEN] = {0};
+    uint32_t len = sizeof(result);
+    if (channel->read((uint8_t *)result, &len) != 0) {
+        printf("Failed to read first response\n");
+        return STATUS_ERR;
+    }
+
+    char *vec[2] = {0};
+    split(result, vec, 2, '@');
+    if (strncmp(vec[0], "OK", 2) != 0) {
+        printf("Host reported error: %s\n", result);
+        return STATUS_ERR;
+    }
+
+    char buf_total_length[CMD_RESULT_BUFF_LEN] = {0};
+    len = sizeof(buf_total_length);
+    if (channel->read((uint8_t *)buf_total_length, &len) != 0) {
+        printf("Failed to read total length\n");
+        channel->write((uint8_t *)"ERR", 4);
+        return STATUS_ERR;
+    }
+
+    split(buf_total_length, vec, 2, '@');
+    if (strncmp(vec[0], "OK", 2) != 0) {
+        printf("Host reported error on length: %s\n", buf_total_length);
+        channel->write((uint8_t *)"ERR", 4);
+        return STATUS_ERR;
+    }
+
+    uint32_t total_length = atoui(vec[1]);
+    printf("Download stream: total_length=0x%x\n", total_length);
+
+    uint8_t *buf = (uint8_t *)malloc(chunk_size);
+    if (!buf) {
+        printf("Failed to allocate %u bytes for %s stream\n", chunk_size, desc);
+        channel->write((uint8_t *)"ERR", 4);
+        return STATUS_ERR;
+    }
+
+    channel->write((uint8_t *)"OK", 3);
+
+    uint32_t xfered = 0;
+    int status = STATUS_OK;
+
+    while (xfered < total_length) {
+        len = sizeof(result);
+        if (channel->read((uint8_t *)result, &len) != 0) {
+            printf("Failed to read chunk signal\n");
+            channel->write((uint8_t *)"ERR", 4);
+            status = STATUS_ERR;
+            break;
+        }
+
+        split(result, vec, 2, '@');
+        if (strncmp(vec[0], "OK", 2) != 0) {
+            printf("Host cancelled or errored: %s\n", result);
+            channel->write((uint8_t *)"ERR", 4);
+            status = STATUS_ERR;
+            break;
+        }
+
+        channel->write((uint8_t *)"OK", 3);
+
+        uint32_t chunk = total_length - xfered;
+        if (chunk > chunk_size)
+            chunk = chunk_size;
+
+        if (channel->read(buf, &chunk) != 0) {
+            printf("Failed to read data chunk at offset 0x%x\n", xfered);
+            channel->write((uint8_t *)"ERR", 4);
+            status = STATUS_ERR;
+            break;
+        }
+
+        if (cb) {
+            status = cb(xfered, buf, chunk, ctx);
+            if (status != 0) {
+                channel->write((uint8_t *)"ERR", 4);
+                break;
+            }
+        }
+
+        xfered += chunk;
+        channel->write((uint8_t *)"OK", 3);
+    }
+
+    free(buf);
+
+    if (status == STATUS_OK) {
+        printf("Downloaded %u bytes via stream for %s\n", xfered, desc);
+    }
+    return status;
+}
+
+int upload_stream(struct com_channel_struct *channel, const char *filename, uint32_t size, uint32_t chunk_size, data_stream_cb cb, void *ctx, const char *desc) {
+    printf("Upload stream host file: %s\n", filename);
+
+    if (!channel || !filename) {
+        printf("Invalid arguments to upload_stream\n");
+        return STATUS_ERR;
+    }
+
+    uint32_t packet_length = 0x200000;
+    if (chunk_size == 0) chunk_size = packet_length;
+    if (chunk_size > packet_length) chunk_size = packet_length;
+
+    char xml[XML_CMD_BUFF_LEN] = {0};
+    const char *cstr_cmd = "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+                           "<host>"
+                           "<version>1.0</version>"
+                           "<command>CMD:UPLOAD-FILE</command>"
+                           "<arg><checksum>CHK_NO</checksum>"
+                           "<info>%s</info>"
+                           "<target_file>%s</target_file>"
+                           "<packet_length>0x%x</packet_length></arg>"
+                           "</host>";
+
+    int xml_len = npf_snprintf(xml, sizeof(xml), cstr_cmd, desc, filename, chunk_size);
+
+    if (channel->write((uint8_t *)xml, (uint32_t)xml_len + 1) != 0) {
+        printf("Failed to send upload command\n");
+        return STATUS_ERR;
+    }
+
+    char result[CMD_RESULT_BUFF_LEN] = {0};
+    uint32_t len = sizeof(result);
+    if (channel->read((uint8_t *)result, &len) != 0) {
+        printf("Failed to read response\n");
+        return STATUS_ERR;
+    }
+
+    char *vec[2] = {0};
+    split(result, vec, 2, '@');
+    if (strncmp(vec[0], "OK", 2) != 0) {
+        printf("Host reported error: %s\n", result);
+        return STATUS_ERR;
+    }
+
+    npf_snprintf(result, sizeof(result), "OK@0x%" PRIx32, size);
+    channel->write((uint8_t *)result, (uint32_t)strlen(result) + 1);
+
+    len = sizeof(result);
+    if (channel->read((uint8_t *)result, &len) != 0) {
+        printf("Failed to read size ack\n");
+        return STATUS_ERR;
+    }
+
+    uint8_t *buf = (uint8_t *)malloc(chunk_size);
+    if (!buf) {
+        printf("Failed to allocate %u bytes for %s stream\n", chunk_size, desc);
+        return STATUS_ERR;
+    }
+
+    uint32_t xfered = 0;
+    uint32_t left = size;
+    int status = STATUS_OK;
+
+    while (left > 0) {
+        channel->write((uint8_t *)"OK", 3);
+
+        len = sizeof(result);
+        if (channel->read((uint8_t *)result, &len) != 0) {
+            printf("Failed to read chunk ack\n");
+            status = STATUS_ERR;
+            break;
+        }
+
+        uint32_t todo = left > chunk_size ? chunk_size : left;
+
+        if (cb) {
+            status = cb(xfered, buf, todo, ctx);
+            if (status != 0) break;
+        }
+
+        channel->write(buf, todo);
+        xfered += todo;
+        left -= todo;
+
+        len = sizeof(result);
+        if (channel->read((uint8_t *)result, &len) != 0) {
+            printf("Failed to read chunk status\n");
+            status = STATUS_ERR;
+            break;
+        }
+
+        split(result, vec, 2, '@');
+        if (strncmp(vec[0], "OK", 2) != 0) {
+            printf("Host error during upload: %s\n", result);
+            status = STATUS_ERR;
+            break;
+        }
+    }
+
+    free(buf);
+
+    if (status == STATUS_OK) {
+        printf("Uploaded %u bytes via stream for %s\n", xfered, desc);
+    }
+    return status;
 }
