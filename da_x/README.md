@@ -7,16 +7,16 @@ DA Extensions are originally developed by [B.Kerler](https://github.com/bkerler)
 ### Supported cmds
 
 - `0xF0000` - CMD ACK, used to aknowledge wether da extensions got loaded
-- `0xF0001` - CMD READMEM, used to read memory from device
-- `0xF0002` - CMD READREG, used to read registers from device
+- `0xF0001` - CMD DA CTX, used to setup the extensions context
+- `0xF0002` - CMD READMEM, used to read memory from device
 - `0xF0003` - CMD WRITEMEM, used to write memory to device
-- `0xF0004` - CMD WRITEREG, used to write registers to device
-- `0xF0005` - CMD SETSTORAGE, used to set storage type (eMMC/UFS)
-- `0xF0006` - CMD RPMB SETKEY, used to set RPMB key
-- `0xF0008` - CMD RPMB INIT, used to init RPMB (depends on storage type, defaults to eMMC)
-- `0xF0009` - CMD RPMB READ, used to read RPMB
-- `0xF000A` - CMD RPMB WRITE, used to write RPMB
-- `0xF000B` - CMD SEJ, used to interact with SEJ for performing cryptological operations (AES)
+- `0xF0004` - CMD READREG, used to read registers from device
+- `0xF0005` - CMD WRITEREG, used to write registers to device
+- `0xF0006` - CMD KEY DERIVE, used to derive keys using the device crypto cell
+- `0xF0007` - CMD SEJ AES, used to interact with SEJ for performing crypto operations
+- `0xF0008` - CMD RPMB INIT, used to init RPMB key. Can be call called only after CMD DA CTX.
+- `0xF0009` - CMD RPMB READ, used to read RPMB. Can be call called only after CMD DA CTX.
+- `0xF000A` - CMD RPMB WRITE, used to write RPMB. Can be call called only after CMD DA CTX.
 
 ### Building
 
@@ -30,8 +30,13 @@ make
 ```
 
 ### License
-This payload is licensed under the *GPL-3.0* License, copyright (C) 2024 B.Kerler, 2025 Shomy.
-See the [LICENSE](../LICENSE.gpl) file for details.
+This payload is licensed under the *AGPL-3.0-or-later* License, copyright (C) 2026 Shomy.
+See the [LICENSE](../LICENSE.agpl) file for details.
+
+Additionally, this payload makes use of: 
+* [libsej](../libsej), which is licensed under the *GPL-3.0* License, copyright (C) 2024 B.Kerler, 2025 Shomy.
+* [nanoprintf](../common/include/nanoprintf.h), dual-licensed under the *Unlicense* and the *Zero-Clause BSD (0BSD)* licenses, copyright (C) 2019 Charles Nicholson. Original source [here](https://github.com/charlesnicholson/nanoprintf)
+* [libc](../common/libc.c), of which some functions are derived from the work of musl libc. Copyright (c) 2005-2018 Rich Felker.
 
 ### Disclaimer
 This payload is intended for educational purposes only. Use it at your own risk. The author is not responsible for any damage caused by using this payload.

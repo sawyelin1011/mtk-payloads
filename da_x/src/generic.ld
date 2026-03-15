@@ -13,9 +13,9 @@ PHDRS
 SECTIONS
 {
   . = 0x68000000;
-  .text     : { *(.text.start) *(.text.main) *(.text   .text.*   .gnu.linkonce.t.*) } :text
+  .text     : { *(.text.start) *(.text.main) *(.text .text.* .gnu.linkonce.t.*) } :text
   .rodata   : { *(.rodata .rodata.* .gnu.linkonce.r.*) } :text
-  .data     : { *(.data   .data.*   .gnu.linkonce.d.*) } :data
-  .bss      : { *(.bss    .bss.*    .gnu.linkonce.b.*) *(COMMON) } :bss
+  .data     : { *(.data .data.* .gnu.linkonce.d.*) } :data
+  .bss      : { __bss_start = .; *(.bss .bss.* .gnu.linkonce.b.*) *(COMMON) __bss_end = .; } :bss
   /DISCARD/ : { *(.interp) *(.dynsym) *(.dynstr) *(.hash) *(.dynamic) *(.comment) }
 }
