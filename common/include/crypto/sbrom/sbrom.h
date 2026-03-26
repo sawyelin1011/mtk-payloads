@@ -65,9 +65,9 @@ typedef struct {
 
 SaSiStatus SBROM_KeyDerivation(uintptr_t hwBaseAddress,
                                HwCryptoKey_t aesKeyType,
-                               uint8_t *seed,
+                               const uint8_t *seed,
                                uint32_t seed_size,
-                               uint8_t *salt,
+                               const uint8_t *salt,
                                uint32_t saltSize,
                                uint8_t *derivedKeyAddr,
                                uint32_t derivedKeySize);

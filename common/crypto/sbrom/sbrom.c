@@ -163,8 +163,8 @@ void SBROM_ClockDisable(void) {
  *
  */
 SaSiStatus SBROM_KeyDerivation(uintptr_t hwBaseAddress, HwCryptoKey_t aesKeyType,
-                                uint8_t *seed, uint32_t seed_size,
-                                uint8_t *salt, uint32_t saltSize,
+                                const uint8_t *seed, uint32_t seed_size,
+                                const uint8_t *salt, uint32_t saltSize,
                                 uint8_t *derivedKeyAddr, uint32_t derivedKeySize)
 {
     volatile uint32_t *base = (volatile uint32_t *)hwBaseAddress;
