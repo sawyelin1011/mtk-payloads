@@ -19,7 +19,6 @@ This project is licensed under the *AGPL-3.0* License. See the [LICENSE](LICENSE
 
 Some payloads may have their own licenses. Please refer to the respective payload directories for more information.
 Notably:
-* [da_x](da_x) is licensed under the GPL-3.0 License, copyright (C) 2024 B.Kerler
 * [libsej](libsej) is licensed under the GPL-3.0 License, copyright (C) 2024 B.Kerler, 2025 (C) Shomy
 
 If you use or modify any of these payloads, please make sure to comply with their respective licenses.
