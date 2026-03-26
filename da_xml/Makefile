@@ -9,7 +9,7 @@ CC_ARM64      := $(CROSS_COMPILE_64)gcc
 OBJCOPY_ARM64 := $(CROSS_COMPILE_64)objcopy
 SIZE_ARM64    := $(CROSS_COMPILE_64)size
 
-FEATURES   := uart crypto rpmb mmc mmc_rpmb
+FEATURES   := uart crypto rpmb mmc mmc_rpmb crypto_ssr
 COMMON_DIR := ../common
 
 include $(COMMON_DIR)/common.mk
@@ -45,7 +45,7 @@ LDFLAGS_ARM64 := $(LDFLAGS) -Tsrc/arch/arm64/generic.ld
 arm_obj   = $(patsubst %.c,$(BUILD_DIR)/arm/%.o,$(subst ../,,$(1)))
 arm64_obj = $(patsubst %.c,$(BUILD_DIR)/aarch64/%.o,$(subst ../,,$(1)))
 
-ARM_OBJS   := $(call arm_obj,$(ALL_SRCS))
+ARM_OBJS   := $(call arm_obj,$(filter-out $(CRYPTO_SSR_SRCS),$(ALL_SRCS)))
 ARM64_OBJS := $(call arm64_obj,$(ALL_SRCS))
 
 ARM_ELF   := $(BUILD_DIR)/arm/da_xml_arm.elf

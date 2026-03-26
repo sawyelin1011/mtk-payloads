@@ -18,6 +18,12 @@
 #include <sej.h>
 #include <nanoprintf.h>
 
+#ifdef __aarch64__
+
+#include <crypto/ssr/ssr.h>
+
+#endif
+
 int cb_opaque(void*) {
     return 2;
 }
@@ -30,6 +36,8 @@ int cmd_ack(struct com_channel_struct *channel, const char*) {
     int status = STATUS_OK;
     const char *target_file = "ack.xml";
     char ack_xml[512];
+
+    printf("\n\n*** Enter [%s] Cmd ***\n\n", __func__);
 
     int len = npf_snprintf(ack_xml, sizeof(ack_xml),
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
@@ -59,7 +67,9 @@ int cmd_da_ctx(struct com_channel_struct *channel, const char* xml) {
     int status = STATUS_OK;
     void *tree;
 
-    MXML_LOAD(tree, xml, CB_OPAQUE, "da/arg/tzcc_base",
+    printf("\n\n*** Enter [%s] Cmd ***\n\n", __func__);
+
+    MXML_LOAD(tree, xml, CB_OPAQUE, "da/arg/tzcc_base", "da/arg/ssr_base",
                         "da/arg/sej_base", "da/arg/usb_log",
                         "da/arg/storage", "da/arg/da2_base",
                         "da/arg/da2_size", NULL);
@@ -70,6 +80,11 @@ int cmd_da_ctx(struct com_channel_struct *channel, const char* xml) {
     uint32_t da2_size   = atoull(get_node_text(tree, "da/arg/da2_size"));
     const char* storage = get_node_text(tree, "da/arg/storage");
     bool usb_log = (strcmp(get_node_text(tree, "da/arg/usb_log"), "yes") == 0);
+
+#ifdef __aarch64__
+    uintptr_t ssr_base = atoull(get_node_text(tree, "da/arg/ssr_base"));
+    set_ssr_base(ssr_base);
+#endif
 
     set_sej_base(sej_base);
     set_tzcc_base(tzcc_base);
@@ -115,6 +130,8 @@ int cmd_readmem(struct com_channel_struct *channel, const char* xml) {
     uintptr_t address;
     u32 length;
 
+    printf("\n\n*** Enter [%s] Cmd ***\n\n", __func__);
+
     MXML_LOAD(tree, xml, CB_OPAQUE, "da/arg/address", "da/arg/length", NULL);
 
     address = atoull(get_node_text(tree, "da/arg/address"));
@@ -135,6 +152,8 @@ int cmd_writemem(struct com_channel_struct *channel, const char* xml) {
     char *address;
     uint32_t length;
 
+    printf("\n\n*** Enter [%s] Cmd ***\n\n", __func__);
+
     MXML_LOAD(tree, xml, CB_OPAQUE, "da/arg/address", "da/arg/length", NULL);
 
     address = (char *)(uintptr_t)atoull(get_node_text(tree, "da/arg/address"));
@@ -154,6 +173,8 @@ int cmd_readregister(struct com_channel_struct *channel, const char *xml) {
     void *tree;
     uintptr_t address;
     char read_reg_xml[128];
+
+    printf("\n\n*** Enter [%s] Cmd ***\n\n", __func__);
 
     MXML_LOAD(tree, xml, CB_OPAQUE, "da/arg/address", NULL);
 
@@ -185,6 +206,8 @@ int cmd_writeregister(struct com_channel_struct *channel, const char *xml) {
     uintptr_t address;
     uint32_t value;
 
+    printf("\n\n*** Enter [%s] Cmd ***\n\n", __func__);
+
     MXML_LOAD(tree, xml, CB_OPAQUE, "da/arg/address", "da/arg/value", NULL);
 
     address = atoull(get_node_text(tree, "da/arg/address"));
@@ -214,6 +237,8 @@ int cmd_key_derive(struct com_channel_struct *channel, const char *xml) {
         "<type>%s</type>"
         "<result>%.32s</result>"
         "</key>";
+
+    printf("\n\n*** Enter [%s] Cmd ***\n\n", __func__);
 
     MXML_LOAD(tree, xml, CB_OPAQUE, "da/arg/key_type", NULL);
 
@@ -260,6 +285,8 @@ int cmd_sej_aes(struct com_channel_struct *channel, const char* xml) {
     bool encrypt;
     bool legacy;
 
+    printf("\n\n*** Enter [%s] Cmd ***\n\n", __func__);
+
     MXML_LOAD(tree, xml, CB_OPAQUE, "da/arg/encrypt", "da/arg/legacy", "da/arg/ac", NULL);
 
     encrypt    = (strcmp(get_node_text(tree, "da/arg/encrypt"), "yes") == 0);
@@ -305,6 +332,8 @@ end:
 
 int cmd_rpmb_init(struct com_channel_struct *channel, const char *xml) {
     (void)channel;
+
+    printf("\n\n*** Enter [%s] Cmd ***\n\n", __func__);
 
     int status = STATUS_OK;
     void *tree;
@@ -358,7 +387,7 @@ end:
 }
 
 int cmd_rpmb_read(struct com_channel_struct *channel, const char *xml) {
-    printf("\n\n*** Enter %s cmd ***\n\n", __func__);
+    printf("\n\n*** Enter [%s] Cmd ***\n\n", __func__);
 
     int status = STATUS_OK;
     void *tree;
@@ -404,7 +433,7 @@ end:
 }
 
 int cmd_rpmb_write(struct com_channel_struct *channel, const char *xml) {
-    printf("\n\n*** Enter %s cmd ***\n\n", __func__);
+    printf("\n\n*** Enter [%s] Cmd ***\n\n", __func__);
 
     int status = STATUS_OK;
     void *tree;
