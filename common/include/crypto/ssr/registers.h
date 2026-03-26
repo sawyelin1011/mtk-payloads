@@ -77,7 +77,7 @@ typedef enum {
 
 typedef enum {
 	AES_256 = 0,
-   	AES_128 = 2,
+	AES_128 = 1,
 	AES_192 = 2,
 } SsrAesType;
 
