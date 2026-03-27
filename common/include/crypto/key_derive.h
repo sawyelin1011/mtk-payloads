@@ -16,8 +16,9 @@ typedef enum {
     AES_IMG_ENC = 3,
     AES_CUSTOM = 4,
     CUSTOM_0 = 5, // Moto
-    CUSTOM_1 = 6,
-    BASE_KEY = 7, // Not sure what this is
+    CUSTOM_1 = 6, // BASE_KEY (not sure for what it is)
+    UNKNOWN_0 = 7, // Unknown, from Goya pl
+    UNKNOWN_1 = 8, // Unknown too
 } KeyType;
 
 typedef struct {
