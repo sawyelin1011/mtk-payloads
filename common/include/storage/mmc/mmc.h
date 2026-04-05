@@ -179,6 +179,8 @@ int mmc_switch_part(struct mmc_dev *dev, uint8_t part);
 
 int mmc_read_block(struct mmc_dev *dev, uint32_t blk, void *buf);
 int mmc_write_block(struct mmc_dev *dev, uint32_t blk, const void *buf);
+int mmc_read_blocks(struct mmc_dev *dev, uint32_t blk, void *buf, uint32_t count);
+int mmc_write_blocks(struct mmc_dev *dev, uint32_t blk, const void *buf, uint32_t count);
 
 int mmc_rpmb_send(struct mmc_dev *dev, uint8_t *frame, uint16_t blks, int type, int is_req);
 

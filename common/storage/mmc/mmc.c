@@ -306,6 +306,45 @@ int mmc_write_block(struct mmc_dev *dev, uint32_t blk, const void *buf) {
     return mmc_pio_write(dev, (const uint8_t *)buf, MMC_BLOCK_SZ);
 }
 
+int mmc_read_blocks(struct mmc_dev *dev, uint32_t blk, void *buf, uint32_t count) {
+    if (count == 0)
+        return 0;
+
+    if (count == 1)
+        return mmc_read_block(dev, blk, buf);
+
+    writel_relaxed(count, REG(dev, SDC_BLK_NUM));
+    if (mmc_cmd(dev, MMC_SET_BLOCK_COUNT, count, MMC_RSP_R1, 0, 0, NULL))
+        return -1;
+
+    writel_relaxed(count, REG(dev, SDC_BLK_NUM));
+    if (mmc_cmd(dev, MMC_READ_MULTIPLE_BLOCK, blk, MMC_RSP_R1, 2, 0, NULL))
+        return -1;
+
+    return mmc_pio_read(dev, (uint8_t *)buf, MMC_BLOCK_SZ * count);
+}
+
+int mmc_write_blocks(struct mmc_dev *dev, uint32_t blk, const void *buf, uint32_t count) {
+    if (count == 0)
+        return 0;
+
+    if (count == 1)
+        return mmc_write_block(dev, blk, buf);
+
+    writel_relaxed(count, REG(dev, SDC_BLK_NUM));
+    if (mmc_cmd(dev, MMC_SET_BLOCK_COUNT, count, MMC_RSP_R1, 0, 0, NULL))
+        return -1;
+
+    writel_relaxed(count, REG(dev, SDC_BLK_NUM));
+    if (mmc_cmd(dev, MMC_WRITE_MULTIPLE_BLOCK, blk, MMC_RSP_R1, 2, 1, NULL))
+        return -1;
+
+    int ret = mmc_pio_write(dev, (const uint8_t *)buf, MMC_BLOCK_SZ * count);
+    if (ret)
+        return ret;
+
+    return mmc_wait_ready(dev);
+}
 
 int mmc_rpmb_send(struct mmc_dev *dev, uint8_t *frame, uint16_t blks, int type, int is_req) {
     uint32_t cmd23_arg = (uint32_t)blks;
