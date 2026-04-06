@@ -230,12 +230,12 @@ int cmd_key_derive(struct com_channel_struct *channel, const char *xml) {
     uint32_t key_length = 0x20;
     void *tree;
     const char *key_type;
-    char key_derive_xml[128];
+    char key_derive_xml[256];
     const char *key_derive_fmt =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         "<key>"
         "<type>%s</type>"
-        "<result>%.32s</result>"
+        "<result>%s</result>"
         "</key>";
 
     printf("\n\n*** Enter [%s] Cmd ***\n\n", __func__);
