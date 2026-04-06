@@ -37,7 +37,7 @@ CFLAGS := $(COMMON_CFLAGS) \
 LDFLAGS := $(COMMON_LDFLAGS) -lgcc
 
 CFLAGS_ARM   := $(CFLAGS) -DARM -marm -mcpu=cortex-a9 -mno-unaligned-access
-CFLAGS_ARM64 := $(CFLAGS) -DAARCH64 -march=armv8-a -mgeneral-regs-only -mno-outline-atomics
+CFLAGS_ARM64 := $(CFLAGS) -DAARCH64 -march=armv8-a -mgeneral-regs-only -mno-outline-atomics -mstrict-align
 
 LDFLAGS_ARM   := $(LDFLAGS) -Tsrc/arch/arm/generic.ld
 LDFLAGS_ARM64 := $(LDFLAGS) -Tsrc/arch/arm64/generic.ld
