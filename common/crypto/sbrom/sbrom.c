@@ -49,7 +49,7 @@ static uint32_t sb_wait_status(volatile uint32_t *base) {
 
 static int sb_wait_completion(volatile uint32_t *base) {
     HwDesc desc;
-    uint32_t completion_flag = 0;
+    uint64_t completion_flag = 0;
     uint64_t flag_addr = (uintptr_t)&completion_flag;
 
     sb_clear_irq(base);
@@ -141,7 +141,7 @@ static int sb_aes_cmac_driver(volatile uint32_t *base, HwCryptoKey_t aesKeyType,
 static int sb_aes_cmac(volatile uint32_t *base, HwCryptoKey_t aesKeyType, uint8_t *buffer, int bufferlen, uint8_t *outbuf) {
     // MAP page
 
-    return sb_aes_cmac_driver(base, aesKeyType, 0, (uint32_t)(uintptr_t)buffer, bufferlen, (uint32_t)(uintptr_t)outbuf);
+    return sb_aes_cmac_driver(base, aesKeyType, 0, (uintptr_t)buffer, bufferlen, (uintptr_t)outbuf);
 
     // UNMAP page
 }
