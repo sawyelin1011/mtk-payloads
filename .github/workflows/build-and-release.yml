@@ -1,0 +1,78 @@
+name: Build & Release MTK Payloads
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      build_all:
+        description: 'Build all payloads'
+        required: false
+        default: 'true'
+
+jobs:
+  build-payloads:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install ARM GNU Toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi
+
+      - name: Create release directory
+        run: mkdir -p release
+
+      # === Extloader (V5 + V6) ===
+      - name: Build Extloader V5
+        working-directory: extloader
+        run: |
+          make clean || true
+          make
+          cp -f *.bin ../../release/ 2>/dev/null || true
+
+      - name: Build Extloader V6
+        working-directory: extloader
+        run: |
+          make -f Makefile.v6 clean || true
+          make -f Makefile.v6
+          cp -f *.bin ../../release/ 2>/dev/null || true
+
+      # === Hakujoudai (HeapBait) ===
+      - name: Build Hakujoudai
+        working-directory: hakujoudai
+        run: |
+          make -C src clean || true
+          make -C src
+          cp -f src/*.bin ../../release/ 2>/dev/null || true
+
+      # === Secpatcher (optional) ===
+      - name: Build Secpatcher
+        working-directory: secpatcher
+        run: |
+          make clean || true
+          make
+          cp -f *.bin ../../release/ 2>/dev/null || true
+
+      - name: List built payloads
+        run: ls -la release/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mtk-payloads
+          path: release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: payloads-${{ github.run_number }}
+          name: MTK Payloads Release ${{ github.run_number }}
+          files: release/*.bin
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
