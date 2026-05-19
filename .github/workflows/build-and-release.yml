@@ -46,9 +46,10 @@ jobs:
         run: |
           make -f Makefile.v6 clean || true
           
-          # Force disable stack protector for arm64 bare-metal build
-          sed -i 's/-fstack-protector/-fno-stack-protector/g' Makefile.v6 || true
-          sed -i 's/-fstack-protector-strong/-fno-stack-protector/g' Makefile.v6 || true
+          # Strong disable of stack protector for arm64
+          sed -i 's/-fstack-protector[^ ]*//g' Makefile.v6 || true
+          sed -i 's/-fstack-check//g' Makefile.v6 || true
+          sed -i '/^arm64_/s/$/ -fno-stack-protector -fno-stack-check/' Makefile.v6 || true
           
           make -f Makefile.v6
           cp -f ../../payloads/extloaderv6_arm.bin ../../release/ 2>/dev/null || true
