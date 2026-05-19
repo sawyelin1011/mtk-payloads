@@ -25,8 +25,7 @@ jobs:
       - name: Create release and payloads directories
         run: |
           mkdir -p release
-          mkdir -p extloader/payloads
-          mkdir -p hakujoudai/payloads
+          mkdir -p payloads          # Required by extloader/Makefile (uses ../payloads)
 
       # === Extloader (V5 + V6) ===
       - name: Build Extloader V5
@@ -34,14 +33,14 @@ jobs:
         run: |
           make clean || true
           make
-          cp -f payloads/extloader_v5.bin ../../release/ 2>/dev/null || true
+          cp -f ../../payloads/extloader_v5.bin ../../release/ 2>/dev/null || true
 
       - name: Build Extloader V6
         working-directory: extloader
         run: |
           make -f Makefile.v6 clean || true
           make -f Makefile.v6
-          cp -f payloads/extloader_v6.bin ../../release/ 2>/dev/null || true
+          cp -f ../../payloads/extloader_v6.bin ../../release/ 2>/dev/null || true
 
       # === Hakujoudai (HeapBait) ===
       - name: Build Hakujoudai
