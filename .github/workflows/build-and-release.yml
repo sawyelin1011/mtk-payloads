@@ -17,10 +17,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install ARM GNU Toolchain
+      - name: Install ARM Toolchains
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi gcc-aarch64-none-linux-gnu g++-aarch64-none-linux-gnu
+          sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
+          # Create symlinks so Makefile.v6 can find aarch64-none-linux-gnu-*
+          sudo ln -sf /usr/bin/aarch64-linux-gnu-gcc     /usr/local/bin/aarch64-none-linux-gnu-gcc
+          sudo ln -sf /usr/bin/aarch64-linux-gnu-g++     /usr/local/bin/aarch64-none-linux-gnu-g++
+          sudo ln -sf /usr/bin/aarch64-linux-gnu-objcopy /usr/local/bin/aarch64-none-linux-gnu-objcopy
+          sudo ln -sf /usr/bin/aarch64-linux-gnu-ld      /usr/local/bin/aarch64-none-linux-gnu-ld
 
       - name: Create release and payloads directories
         run: |
@@ -40,7 +46,7 @@ jobs:
         run: |
           make -f Makefile.v6 clean || true
           make -f Makefile.v6
-          cp -f ../../payloads/extloader_v6.bin ../../release/ 2>/dev/null || true
+          cp -f ../../payloads/extloaderv6_arm.bin ../../release/ 2>/dev/null || true
 
       # === Hakujoudai (HeapBait) ===
       - name: Build Hakujoudai
