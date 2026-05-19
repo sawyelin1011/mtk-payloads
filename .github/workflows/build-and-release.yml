@@ -45,8 +45,12 @@ jobs:
         working-directory: extloader
         run: |
           make -f Makefile.v6 clean || true
-          # Disable stack protector for bare-metal arm64 build
-          CFLAGS="-fno-stack-protector -fno-stack-check" make -f Makefile.v6
+          
+          # Force disable stack protector for arm64 bare-metal build
+          sed -i 's/-fstack-protector/-fno-stack-protector/g' Makefile.v6 || true
+          sed -i 's/-fstack-protector-strong/-fno-stack-protector/g' Makefile.v6 || true
+          
+          make -f Makefile.v6
           cp -f ../../payloads/extloaderv6_arm.bin ../../release/ 2>/dev/null || true
 
       # === Hakujoudai (HeapBait) ===
